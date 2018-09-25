@@ -1,4 +1,4 @@
-import sys
+
 import numpy as np
 import cv2
 import time
@@ -21,23 +21,27 @@ print("carregando... 100")
 ret, frame = video_capture.read()
 bg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY);
 
+cont = 0
 
+lista = []
 
 
 
 
 while 1:
+    cont = cont +1
     ret, frame = video_capture.read()
     
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     
+
     new = cv2.absdiff(bg, gray)
     
     new = cv2.dilate(new, None, iterations=2)
     
-    new = cv2.threshold(new, 55, 255, cv2.THRESH_BINARY)[1]
+    new = cv2.threshold(new, 50, 255, cv2.THRESH_BINARY)[1]
     
-    new = cv2.dilate(new, np.ones((6,3), np.uint8), iterations=5)
+    new = cv2.dilate(new, np.ones((10,3), np.uint8), iterations=5)
     
     _, contours, _ = cv2.findContours(new, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
@@ -61,9 +65,33 @@ while 1:
         
         color = (0, 255, 0)
         cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-
+        
+        
+        
+        salva = True
+        for nitem in range(0, len(lista)):
+            
+            item = lista[nitem]
+            
+            if ((x > (item[0] - 70)) & (x < (item[0] + 70))) & ((y > (item[1] - 70)) & (y < (item[1] + 70)) & ((x + w)  > (item[0] - 70 + item[2])) & ((x + w) < (item[0] + 70 + item[2]))) & (((y+h) > (item[1] - 70 + item[3])) & ((y+h) < (item[1] + 70 + item[3]))):
+                
+                lista.pop(nitem)
+                
+                lista.insert(nitem, [x, y, w, h, item[4]])
+                salva = False
+                
+                
+                continue
+            
+            
+        
+            cv2.putText(frame, "{}".format((lista[nitem])[4]), (x, y+h+20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 1)
+        
+        
+        if(salva):
+            lista.append([x, y, w, h,cont])
     
-    
+    print(len(lista))
  
     cv2.imshow("NEW",new)
     cv2.imshow("Frame",frame)
