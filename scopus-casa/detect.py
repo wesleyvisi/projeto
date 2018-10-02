@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import time
 import sys
+import objeto
 
 
 
@@ -106,10 +107,12 @@ def pegarBackground(capcapture):
     contours = [1,2]
 
     ret, frame = video_capture.read()
+    frame = gira(frame)
     primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY);
 
     while(len(contours) > 0):
         ret, frame = video_capture.read()
+        frame = gira(frame)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         new = cv2.absdiff(primarybg, gray)
         new = cv2.dilate(new, None, iterations=5)
@@ -130,20 +133,32 @@ def atualizaBackground(x,y,w,h,bg,gray):
 
 
 
+def gira(frame):
+    altura, largura = frame.shape[:2]
+    frame = cv2.resize(frame,(largura,largura))
+    ponto = (largura / 2, largura / 2) #ponto no centro da figura
+    rotacao = cv2.getRotationMatrix2D(ponto, 90, 1.0)
+    rotacionado = cv2.warpAffine(frame, rotacao, (largura, largura))
+    return cv2.resize(rotacionado,(altura,largura))
+
+
 
 
 
 
 print("carregando... ")
-video_capture = cv2.VideoCapture("rtsp://10.42.0.93:554/user=admin&password=admin&channel=1&stream=0.sdp?")
+video_capture = cv2.VideoCapture("rtsp://10.42.0.97:554/user=admin&password=raspcam&channel=1&stream=0.sdp?")
 #video_capture = cv2.VideoCapture(0)
 
 
-cascPath = "haarcascade_upperbody.xml"
-upperbodyCascade = cv2.CascadeClassifier(cascPath)
+cascPathUpperBody = "haarcascade_upperbody.xml"
+cascPathFrontalFace = "haarcascade_frontalface_default.xml"
+upperbodyCascade = cv2.CascadeClassifier(cascPathUpperBody)
+frontalFaceCascade = cv2.CascadeClassifier(cascPathFrontalFace)
 
 ret, frame = video_capture.read()
-time.sleep(2)
+frame = gira(frame)
+time.sleep(1)
 
 primarybg = cv2.cvtColor(pegarBackground(video_capture), cv2.COLOR_BGR2GRAY);
 
@@ -158,6 +173,7 @@ lista = []
 
 while 1:
     ret, frame = video_capture.read()
+    frame = gira(frame)
     numFrame = numFrame +1
     
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -198,10 +214,14 @@ while 1:
             
             item = lista[nitem]
             
-            if(verificaArea(item,[x, y, w, h])):
+           
+            
+            if(verificaArea([item.x,item.y,item.w,item.h],[x, y, w, h])):
                 
                 #indices(0:x,1:y,2:w,3:h,4:numero do quadrado,5:posição do quadro no frame anterior,6:informa se é uma pessoa)
-                novoitem = [x, y, w, h, item[4],[item[0],item[1],item[2],item[3]],item[6]]
+                novoitem = objeto.Objeto(item.num,x, y, w, h,[item.x,item.y,item.w,item.h],item.verificacoes,item.confirmado,time.time())
+                #[x, y, w, h, item[4],[item[0],item[1],item[2],item[3]],item[6]]
+                
                 
                 lista.pop(nitem)
                 
@@ -212,24 +232,25 @@ while 1:
                 continue
             
             
-            if(verificaArea(item[5],[x, y, w, h])):
+            if(verificaArea(item.areaAnterior,[x, y, w, h])):
             
                     
-                if x > item[0]:
-                    x = item[0]
+                if x > item.x:
+                    x = item.x
                     
-                if y > item[1]:
-                    y = item[1]
+                if y > item.y:
+                    y = item.y
                     
-                if x + w < item[0] + item[2]:
-                    w = (item[0] + item[2]) - x
+                if x + w < item.x + item.w:
+                    w = (item.x + item.w) - x
                     
-                if y + h < item[1] + item[3]:
-                    h = (item[1] + item[3]) - y
+                if y + h < item.y + item.h:
+                    h = (item.y + item.h) - y
                     
                 
                 #indices(0:x,1:y,2:w,3:h,4:numero do quadrado,5:posição do quadro no frame anterior,6:informa se é uma pessoa)
-                novoitem = [x, y, w, h, item[4],item[5],item[6]]
+                novoitem = objeto.Objeto(item.num,x, y, w, h,item.areaAnterior,item.verificacoes,item.confirmado,item.ultimoMovimento)
+                #novoitem = [x, y, w, h, item[4],item[5],item[6]]
                 
                 lista.pop(nitem)
                 
@@ -245,7 +266,8 @@ while 1:
         
         #se o quadrado não estiver na lista salva ele
         if(salva):
-            lista.append([x, y, w, h,numFrame ,[x, y, w, h],False])
+            lista.append(objeto.Objeto(numFrame,x, y, w, h,[x, y, w, h],0,0, time.time()))
+            #lista.append([x, y, w, h,numFrame ,[x, y, w, h],False])
             
             
     
@@ -277,7 +299,7 @@ while 1:
             num2 = num1 + 1
             
             while num2 < len(lista):
-                if ((lista[num1][0] == lista[num2][0]) & (lista[num1][1] == lista[num2][1]) & (lista[num1][2] == lista[num2][2]) & (lista[num1][3] == lista[num2][3])):
+                if ((lista[num1].x == lista[num2].x) & (lista[num1].y == lista[num2].y) & (lista[num1].w == lista[num2].w) & (lista[num1].h == lista[num2].h)):
                     lista.pop(num2)
                 else:
                     num2 = num2 + 1
@@ -292,28 +314,37 @@ while 1:
         
         item = lista[nitem]
         
-        x = item[0]
-        y = item[1]
-        w = item[2]
-        h = item[3]
+        x = item.x
+        y = item.y
+        w = item.w
+        h = item.h
         
         #se o quadrado ainda não foi confirmado como pessoa, verifica utilizando Cascade se encontra a parte de cima de uma pessoa somente dentro do quadro
-        if(item[6] == False & (numFrame % 5 == 0)):
+        if(numFrame % 2 == 0):
             quadro = gray[y:y+h, x:x+w]
 
-            upperbodys = upperbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=3)
+            upperbodys = upperbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=2)
+            frontalFaces = frontalFaceCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=2)
             
-            for (ux, uy, uw, uh) in upperbodys:
-                item[6] = True
+            
+            item.verificacoes = item.verificacoes + 1
+                
+            if(len(upperbodys) > 0):
+                item.confirmado = item.confirmado + 1
+            elif(len(frontalFaces) > 0):
+                item.confirmado = item.confirmado + 1
                     
-                lista.pop(nitem)
+            lista.pop(nitem)
                     
-                lista.insert(nitem,item)
+            lista.insert(nitem,item)
             
             
         
-        cv2.putText(frame, "{}".format(item[4]), (x, y+60), cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 2)
-        if item[6]:
+        cv2.putText(frame, "{}".format(str(item.num)), (x, y+50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 2)
+        cv2.putText(frame, "{}".format(str(item.confirmado)), (x, y+100), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        cv2.putText(frame, "{}".format(str(item.verificacoes)), (x, y+140), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        cv2.putText(frame, "{}".format(str(item.ultimoMovimento)), (x, y+180), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        if(item.confirmado > (item.verificacoes / 50)):
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0,0,255), 2)
         else:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (50,200,50), 2)
@@ -330,6 +361,7 @@ while 1:
     if cv2.waitKey(1) & 0xFF == ord('n'):     
         cv2.destroyAllWindows()
         ret, frame = video_capture.read()
+        frame = gira(frame)
         primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY);
         bg = primarybg.copy()
     if cv2.waitKey(1) & 0xFF == ord('q'):
