@@ -116,7 +116,7 @@ def pegarBackground(capcapture):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         new = cv2.absdiff(primarybg, gray)
         new = cv2.dilate(new, None, iterations=5)
-        new = cv2.threshold(new, 50, 255, cv2.THRESH_BINARY)[1]
+        new = cv2.threshold(new, 18, 255, cv2.THRESH_BINARY)[1]
         _, contours, _ = cv2.findContours(new, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY);
         
@@ -147,18 +147,21 @@ def gira(frame):
 
 
 print("carregando... ")
-video_capture = cv2.VideoCapture("rtsp://10.42.0.97:554/user=admin&password=raspcam&channel=1&stream=0.sdp?")
+video_capture = cv2.VideoCapture("rtsp://10.42.0.95:554/user=admin&password=raspcam&channel=1&stream=0.sdp?")
 #video_capture = cv2.VideoCapture(0)
 
 
 cascPathUpperBody = "haarcascade_upperbody.xml"
+cascPathFullBody = "haarcascade_fullbody.xml"
 cascPathFrontalFace = "haarcascade_frontalface_default.xml"
 upperbodyCascade = cv2.CascadeClassifier(cascPathUpperBody)
+fullbodyCascade = cv2.CascadeClassifier(cascPathFullBody)
 frontalFaceCascade = cv2.CascadeClassifier(cascPathFrontalFace)
 
 ret, frame = video_capture.read()
 frame = gira(frame)
 time.sleep(1)
+alturaJanela, larguraJanela = frame.shape[:2]
 
 primarybg = cv2.cvtColor(pegarBackground(video_capture), cv2.COLOR_BGR2GRAY);
 
@@ -195,7 +198,26 @@ while 1:
         
         
         
-        if ((cv2.contourArea(contour) < 50*50) & (w < (h * 4)) & (w > (h * 0.20)) ):
+        '''if ( (cv2.contourArea(contour) < 45*45) & (w < (h * 4)) & (w > (h * 0.20)) ):
+            
+            bg = atualizaBackground(x,y,w,h,bg,gray)
+            
+            continue
+        
+        '''
+        if (((y + h) < (alturaJanela / 3)) &   (cv2.contourArea(contour) < 40*40) & (w < (h * 4)) & (w > (h * 0.20)) ):
+            
+            bg = atualizaBackground(x,y,w,h,bg,gray)
+            
+            continue
+        
+        if (((y + h) > (alturaJanela / 3)) & ((y + h) < ((alturaJanela / 3)) * 2) &   (cv2.contourArea(contour) < ((40*40)*2)) & (w < (h * 4)) & (w > (h * 0.20)) ):
+            
+            bg = atualizaBackground(x,y,w,h,bg,gray)
+            
+            continue
+        
+        if (((y + h) > ((alturaJanela / 3)) * 2) &   (cv2.contourArea(contour) < ((40*40)*3)) & (w < (h * 4)) & (w > (h * 0.20)) ):
             
             bg = atualizaBackground(x,y,w,h,bg,gray)
             
@@ -219,7 +241,7 @@ while 1:
             if(verificaArea([item.x,item.y,item.w,item.h],[x, y, w, h])):
                 
                 #indices(0:x,1:y,2:w,3:h,4:numero do quadrado,5:posição do quadro no frame anterior,6:informa se é uma pessoa)
-                novoitem = objeto.Objeto(item.num,x, y, w, h,[item.x,item.y,item.w,item.h],item.verificacoes,item.confirmado,time.time())
+                novoitem = objeto.Objeto(item.num,x, y, w, h,[item.x,item.y,item.w,item.h],item.verificacoes,item.confirmado,item.ultimoMovimento, item.deteccoes)
                 #[x, y, w, h, item[4],[item[0],item[1],item[2],item[3]],item[6]]
                 
                 
@@ -249,7 +271,7 @@ while 1:
                     
                 
                 #indices(0:x,1:y,2:w,3:h,4:numero do quadrado,5:posição do quadro no frame anterior,6:informa se é uma pessoa)
-                novoitem = objeto.Objeto(item.num,x, y, w, h,item.areaAnterior,item.verificacoes,item.confirmado,item.ultimoMovimento)
+                novoitem = objeto.Objeto(item.num,x, y, w, h,item.areaAnterior,item.verificacoes,item.confirmado,item.ultimoMovimento, item.deteccoes)
                 #novoitem = [x, y, w, h, item[4],item[5],item[6]]
                 
                 lista.pop(nitem)
@@ -266,7 +288,7 @@ while 1:
         
         #se o quadrado não estiver na lista salva ele
         if(salva):
-            lista.append(objeto.Objeto(numFrame,x, y, w, h,[x, y, w, h],0,0, time.time()))
+            lista.append(objeto.Objeto(numFrame,x, y, w, h,[x, y, w, h],0,0, time.time(),[]))
             #lista.append([x, y, w, h,numFrame ,[x, y, w, h],False])
             
             
@@ -274,18 +296,20 @@ while 1:
     
     
     
-    if(numFrame % 500 == 0):
+    
+    
+    if(numFrame % 150 == 0):
         
         print("Limpando Bg")
         
         dif = cv2.absdiff(primarybg, gray)
-        dif = cv2.threshold(dif, 50, 255, cv2.THRESH_BINARY)[1]
+        dif = cv2.threshold(dif, 10, 255, cv2.THRESH_BINARY)[1]
             
             
         for y in range(0,primarybg.shape[0]):
             for x in range(0,primarybg.shape[1]):
                 if(dif[y,x] == 0):
-                    bg[y,x] = primarybg[y,x] ;
+                    bg[y,x] = gray[y,x] ;
                     
         
         
@@ -296,6 +320,17 @@ while 1:
         num1 = 0;
         num2 = 0;
         while num1 < len(lista):
+            
+            if(lista[num1].w * lista[num1].h >= ((larguraJanela * alturaJanela) * 0.9)):
+                
+                
+                primarybg = cv2.cvtColor(pegarBackground(video_capture), cv2.COLOR_BGR2GRAY);
+                
+                bg = primarybg.copy()
+                
+                
+                
+                
             num2 = num1 + 1
             
             while num2 < len(lista):
@@ -307,7 +342,19 @@ while 1:
         
         print(len(lista))
         
-
+        
+    for nitem in range(0, len(lista)):
+        item = lista[nitem]
+        if((item.x >= (item.areaAnterior[0] - 2)) & (item.x <= (item.areaAnterior[0] + 2)) & (item.y >= (item.areaAnterior[1] - 2)) & (item.y <= (item.areaAnterior[1] + 2))   &   (item.w >= (item.areaAnterior[2] - 2)) & (item.w <= (item.areaAnterior[2] + 2)) & (item.h >= (item.areaAnterior[3] - 2)) & (item.h <= (item.areaAnterior[3] + 2)) ):
+            
+            if((item.tempoParado() > 5) & (item.pessoa())):
+                cv2.putText(frame, "{}".format("SOS"), (x, y+250), cv2.FONT_HERSHEY_SIMPLEX, 3, color, 3)
+               
+            if((item.tempoParado() > 10) & (item.pessoa() == False)):
+                bg = atualizaBackground(item.x,item.y,item.w,item.h,bg,gray)         
+                            
+        else:
+            item.ultimoMovimento = time.time()
         
     #Marca quadrados na imagem
     for nitem in range(0, len(lista)):
@@ -323,16 +370,29 @@ while 1:
         if(numFrame % 2 == 0):
             quadro = gray[y:y+h, x:x+w]
 
-            upperbodys = upperbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=2)
-            frontalFaces = frontalFaceCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=2)
+            frontalFaces = frontalFaceCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=3)
+            
+            if(len(frontalFaces) > 0):
+                item.deteccoesAdd(True)
+            else:
+                upperbodys = upperbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=3)
+                if(len(upperbodys) > 0):
+                    item.deteccoesAdd(True)
+                else:
+                    fullbodys = fullbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=4)
+                    if(len(fullbodys) > 0):
+                        item.deteccoesAdd(True)
+                    else:
+                        item.deteccoesAdd(False)
+                
+                
             
             
             item.verificacoes = item.verificacoes + 1
                 
-            if(len(upperbodys) > 0):
-                item.confirmado = item.confirmado + 1
-            elif(len(frontalFaces) > 0):
-                item.confirmado = item.confirmado + 1
+            
+            
+                
                     
             lista.pop(nitem)
                     
@@ -344,7 +404,7 @@ while 1:
         cv2.putText(frame, "{}".format(str(item.confirmado)), (x, y+100), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
         cv2.putText(frame, "{}".format(str(item.verificacoes)), (x, y+140), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
         cv2.putText(frame, "{}".format(str(item.ultimoMovimento)), (x, y+180), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
-        if(item.confirmado > (item.verificacoes / 50)):
+        if(item.pessoa()):
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0,0,255), 2)
         else:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (50,200,50), 2)
@@ -358,12 +418,22 @@ while 1:
     cv2.imshow("bg",bg)
     #cv2.imshow("primary",primarybg)
     
+    
+    if(len(contours) == 0):
+        while(len(lista) > 0):
+            lista.pop(0)
+    
+    
+    
+    
     if cv2.waitKey(1) & 0xFF == ord('n'):     
         cv2.destroyAllWindows()
-        ret, frame = video_capture.read()
-        frame = gira(frame)
-        primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY);
-        bg = primarybg.copy()
+        
+        primarybg = cv2.cvtColor(pegarBackground(video_capture), cv2.COLOR_BGR2GRAY);
+        
+        bg = primarybg.copy();
+        
+        
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
     
