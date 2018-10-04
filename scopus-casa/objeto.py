@@ -1,21 +1,36 @@
 from _ast import Num
+import numpy as np
+import sys
 import time
+import threading 
+import cv2
+
 
 class Objeto(object):
     
 
     
-    def __init__(self, num, x, y, w, h, areaAnterior, verificacoes, confirmado, tempo, deteccoes):
+    def __init__(self, num, x, y, w, h, areaAnterior, tempo,gray):
         self.num = num
         self.x = x
         self.y = y
         self.w = w
         self.h = h
         self.areaAnterior = areaAnterior
-        self.verificacoes = verificacoes
-        self.confirmado =  confirmado
         self.ultimoMovimento = tempo
-        self.deteccoes = deteccoes
+        self.deteccoes = []
+        self.ultimoFrame = num
+        
+        cascPathUpperBody = "haarcascade_upperbody.xml"
+        cascPathFullBody = "haarcascade_fullbody.xml"
+        cascPathFrontalFace = "haarcascade_frontalface_default.xml"
+        upperbodyCascade = cv2.CascadeClassifier(cascPathUpperBody)
+        fullbodyCascade = cv2.CascadeClassifier(cascPathFullBody)
+        frontalFaceCascade = cv2.CascadeClassifier(cascPathFrontalFace)
+        
+                
+        self.thr = threading.Thread(target=(self.detecta),args=(gray,frontalFaceCascade,upperbodyCascade,fullbodyCascade))
+        self.thr.start()
         
         
     def tempoParado(self):
@@ -47,7 +62,124 @@ class Objeto(object):
     
     
     
+        
+    def detecta(self,gray,frontalFaceCascade,upperbodyCascade,fullbodyCascade):
+        while True:
+            
+            quadro = gray[self.y:self.y+self.h, self.x:self.x+self.w]
+            
+            time.sleep(0.2)
+            
+            frontalFaces = frontalFaceCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=3)
+                
+            if(len(frontalFaces) > 0):
+                self.deteccoesAdd(True)
+            else:
+                upperbodys = upperbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=3)
+                if(len(upperbodys) > 0):
+                    self.deteccoesAdd(True)
+                else:
+                    fullbodys = fullbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=4)
+                    if(len(fullbodys) > 0):
+                        self.deteccoesAdd(True)
+                    else:
+                        self.deteccoesAdd(False)
+                    
+                    
+                
     
+    
+    
+    
+    
+    def verificaArea(self,x2,y2,w2,h2):
+        
+        x1 = self.areaAnterior[0]
+        y1 = self.areaAnterior[1]
+        w1 = self.areaAnterior[2]
+        h1 = self.areaAnterior[3]
+        
+        
+        
+        x = -1
+        y = -1
+        w = -1
+        h = -1
+            
+        if((x1 > x2) & ((x2 + w2) > x1) ):
+            if((y1 > y2) & ((y2 + h2) > y1) ):
+                
+                w = x2 + w2 - x1
+                if(w1 < w):
+                    w = w1
+                x = x1
+                
+                h = y2 + h2 - y1
+                if(h1  < h):
+                    h = h1
+                    
+                y = y1
+                
+            elif((y1 <= y2) & (y2 <= (y1 + h1 )) ):
+                
+                w = x2 + w2 - x1
+                if(w1 < w):
+                    w = w1
+                    
+                x = x1
+                
+                h = y1 + h1 - y2
+                if(h2  < h):
+                    h = h2
+                    
+                y = y2
+              
+                
+        elif((x1 <= x2) & (x2 <= (x1 + w1 )) ):
+            if((y1 > y2) & ((y2 + h2) > y1) ):
+                
+                w = x1 + w1 - x2
+                if(w2 < w):
+                    w = w2
+                    
+                x = x2
+                
+                h = y2 + h2 - y1
+                if(h1  < h):
+                    h = h1
+                    
+                y = y1
+                    
+              
+            elif((y1 <= y2) & (y2 <= (y1 + h1 )) ):
+                
+                w = x1 + w1 - x2
+                if(w2 < w):
+                    w = w2
+                    
+                x = x2
+                
+                h = y1 + h1 - y2
+                if(h2  < h):
+                    h = h2
+                    
+                y = y2
+                    
+        
+        if(w == -1 & h == -1):
+            return False
+        
+        A1 = w1 * h1
+        A2 = w2 * h2
+        A = w * h
+        
+        if((A > (A1 * 0.25)) | (A > (A2 * 0.25))):
+            return True
+        
+        else:
+            return False
+    
+        
     
     
     
