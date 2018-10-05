@@ -8,19 +8,23 @@ import cv2
 
 class Imagens(object):
     
-    def __init__(camera, rotacao):
+    def __init__(self,camera, rotacao):
         
         self.stop = False
         
-        self.rotacao
+        self.rotacao = rotacao
+        
+        self.numFrame = 0
         
         self.video_capture = cv2.VideoCapture(camera)
         ret, preFrame = self.video_capture.read()
         
-        self.frame = gira(preFrame)
+        self.frame = self.gira(preFrame)
         
         self.alturaImagem, self.larguraImagem = self.frame.shape[:2]
         time.sleep(1)
+        
+        self.frameShow = self.frame.copy()
         
         self.gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         
@@ -33,9 +37,13 @@ class Imagens(object):
         
         
         
+        new = cv2.absdiff(self.bg, self.gray)
+        new = cv2.dilate(new, None, iterations=2)
+        self.bin = cv2.threshold(new, 50, 255, cv2.THRESH_BINARY)[1]
+                
         
-        limpabg = threading.Thread(target=limpaBg,args=())
-        limpabg.start()
+        self.limpabg = threading.Thread(target=self.limpaBg,args=())
+        self.limpabg.start()
         
         
         
@@ -43,6 +51,16 @@ class Imagens(object):
     def stopImagens(self):
         self.video_capture.release()
         self.stop = True
+    
+    
+    def readFrame(self):
+        ret, preFrame = self.video_capture.read()
+        
+        self.frame = self.gira(preFrame)
+        self.gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        
+        self.numFrame = self.numFrame + 1
+    
     
         
         
@@ -55,10 +73,10 @@ class Imagens(object):
             dif = cv2.threshold(dif, 10, 255, cv2.THRESH_BINARY)[1]
                     
                     
-            for y in range(0,primarybg.shape[0]):
-                for x in range(0,primarybg.shape[1]):
+            for y in range(0,self.primarybg.shape[0]):
+                for x in range(0,self.primarybg.shape[1]):
                     if(dif[y,x] == 0):
-                        bg[y,x] = gray[y,x] 
+                        self.bg[y,x] = self.gray[y,x] 
         
 
 
@@ -71,18 +89,18 @@ class Imagens(object):
         
         ret, preFrame = self.video_capture.read()
         
-        frame = gira(preFrame)
+        frame = self.gira(preFrame)
         
         self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY);
         
         while(len(contours) > 0):
             ret, preFrame = self.video_capture.read()
             
-            frame = gira(preFrame)
+            frame = self.gira(preFrame)
             
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            diff = cv2.absdiff(primarybg, gray)
-            dilate = cv2.dilate(dif, None, iterations=5)
+            diff = cv2.absdiff(self.primarybg, gray)
+            dilate = cv2.dilate(diff, None, iterations=5)
             bin = cv2.threshold(dilate, 18, 255, cv2.THRESH_BINARY)[1]
             _, contours, _ = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY);
@@ -102,7 +120,7 @@ class Imagens(object):
     
     def gira(self,frame):
         
-        if(rotacao == 90):
+        if(self.rotacao == 90):
             altura, largura = frame.shape[:2]
             frame = cv2.resize(frame,(largura,largura))
             ponto = (largura / 2, largura / 2) #ponto no centro da figura
@@ -110,13 +128,13 @@ class Imagens(object):
             rotacionado = cv2.warpAffine(frame, rotacao, (largura, largura))
             return cv2.resize(rotacionado,(int(altura/1),int(largura/1)))
         
-        if(rotacao == 180):
+        if(self.rotacao == 180):
             altura, largura = frame.shape[:2]
-            ponto = (altura / 2, largura / 2) #ponto no centro da figura
+            ponto = (largura / 2, altura / 2) #ponto no centro da figura
             rotacao = cv2.getRotationMatrix2D(ponto, 180, 1.0)
-            return cv2.warpAffine(frame, rotacao, (altura, largura))
+            return cv2.warpAffine(frame, rotacao, (largura, altura))
         
-        if(rotacao == 270):
+        if(self.rotacao == 270):
             altura, largura = frame.shape[:2]
             frame = cv2.resize(frame,(largura,largura))
             ponto = (largura / 2, largura / 2) #ponto no centro da figura
@@ -124,7 +142,22 @@ class Imagens(object):
             rotacionado = cv2.warpAffine(frame, rotacao, (largura, largura))
             return cv2.resize(rotacionado,(int(altura/1),int(largura/1)))
         
+        return frame
         
         
+    def pegarContornos(self):
+        new = cv2.absdiff(self.bg, self.gray)
+    
+        new = cv2.dilate(new, None, iterations=2)
         
+        new = cv2.threshold(new, 40, 255, cv2.THRESH_BINARY)[1]
         
+        self.bin = cv2.dilate(new, np.ones((9,3), np.uint8), iterations=5)
+        
+        _, contours, _ = cv2.findContours(new, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        return contours
+    
+    
+    
+    def atualizaFrameShow(self):
+        self.frameShow = self.frame

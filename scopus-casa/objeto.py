@@ -74,6 +74,7 @@ class Objeto(object):
         
     def detecta(self,gray,frontalFaceCascade,upperbodyCascade,fullbodyCascade):
         while not self.stop:
+            print(self.num)
             
             quadro = gray[self.y:self.y+self.h, self.x:self.x+self.w]
             
@@ -88,7 +89,7 @@ class Objeto(object):
                 if(len(upperbodys) > 0):
                     self.deteccoesAdd(True)
                 else:
-                    fullbodys = fullbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=4)
+                    fullbodys = fullbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=2)
                     if(len(fullbodys) > 0):
                         self.deteccoesAdd(True)
                     else:
@@ -182,7 +183,7 @@ class Objeto(object):
         A2 = w2 * h2
         A = w * h
         
-        if((A > (A1 * 0.3)) | (A > (A2 * 0.3))):
+        if((A > (A1 * 0.25)) | (A > (A2 * 0.25))):
             return True
         
         else:
