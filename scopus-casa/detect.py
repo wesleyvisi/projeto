@@ -4,103 +4,10 @@ import numpy as np
 import cv2
 import time
 import sys
-import objeto
+from objeto import Objeto
 import threading 
 
 
-
-def verificaArea(q1,q2):
-    x1 = q1[0]
-    y1 = q1[1]
-    w1 = q1[2]
-    h1 = q1[3]
-    
-    x2 = q2[0]
-    y2 = q2[1]
-    w2 = q2[2]
-    h2 = q2[3]
-    
-    x = -1
-    y = -1
-    w = -1
-    h = -1
-        
-    if((x1 > x2) & ((x2 + w2) > x1) ):
-        if((y1 > y2) & ((y2 + h2) > y1) ):
-            
-            w = x2 + w2 - x1
-            if(w1 < w):
-                w = w1
-            x = x1
-            
-            h = y2 + h2 - y1
-            if(h1  < h):
-                h = h1
-                
-            y = y1
-            
-        elif((y1 <= y2) & (y2 <= (y1 + h1 )) ):
-            
-            w = x2 + w2 - x1
-            if(w1 < w):
-                w = w1
-                
-            x = x1
-            
-            h = y1 + h1 - y2
-            if(h2  < h):
-                h = h2
-                
-            y = y2
-          
-            
-    elif((x1 <= x2) & (x2 <= (x1 + w1 )) ):
-        if((y1 > y2) & ((y2 + h2) > y1) ):
-            
-            w = x1 + w1 - x2
-            if(w2 < w):
-                w = w2
-                
-            x = x2
-            
-            h = y2 + h2 - y1
-            if(h1  < h):
-                h = h1
-                
-            y = y1
-                
-          
-        elif((y1 <= y2) & (y2 <= (y1 + h1 )) ):
-            
-            w = x1 + w1 - x2
-            if(w2 < w):
-                w = w2
-                
-            x = x2
-            
-            h = y1 + h1 - y2
-            if(h2  < h):
-                h = h2
-                
-            y = y2
-                
-    
-    if(w == -1 & h == -1):
-        return False
-    
-    A1 = w1 * h1
-    A2 = w2 * h2
-    A = w * h
-    
-    if((A > (A1 * 0.25)) | (A > (A2 * 0.25))):
-        return True
-    
-    else:
-        return False
-
-            
-          
-         
 
 
 def pegarBackground(capcapture):
@@ -143,44 +50,10 @@ def gira(frame):
     return cv2.resize(rotacionado,(int(altura/1),int(largura/1)))
 
 
-def detecta():
-    while True:
-        time.sleep(0.1)
-        for nitem in range(0, len(lista)):
-            
-            item = lista[nitem]
-            
-            x = item.x
-            y = item.y
-            w = item.w
-            h = item.h
-            
-            #se o quadrado ainda não foi confirmado como pessoa, verifica utilizando Cascade se encontra a parte de cima de uma pessoa somente dentro do quadro
-            if(numFrame % 2 == 0):
-                quadro = gray[y:y+h, x:x+w]
 
-                frontalFaces = frontalFaceCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=3)
-                
-                if(len(frontalFaces) > 0):
-                    item.deteccoesAdd(True)
-                else:
-                    upperbodys = upperbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=3)
-                    if(len(upperbodys) > 0):
-                        item.deteccoesAdd(True)
-                    else:
-                        fullbodys = fullbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=4)
-                        if(len(fullbodys) > 0):
-                            item.deteccoesAdd(True)
-                        else:
-                            item.deteccoesAdd(False)
-                    
-                    
-                
-                
-                item.verificacoes = item.verificacoes + 1
-                
+              
 def show():
-    time.sleep(3)
+    time.sleep(1)
     while True:
         time.sleep(0.2)
         #cv2.imshow("NEW",new)
@@ -210,18 +83,12 @@ def limpaBg():
 
 
 print("carregando... ")
-video_capture = cv2.VideoCapture("rtsp://10.42.0.96:554/user=admin&password=raspcam&channel=1&stream=0.sdp?")
+video_capture = cv2.VideoCapture("rtsp://10.42.0.95:554/user=admin&password=raspcam&channel=1&stream=0.sdp?")
 #video_capture = cv2.VideoCapture(0)
 
 #video_capture.set(5, 1)
 
 
-cascPathUpperBody = "haarcascade_upperbody.xml"
-cascPathFullBody = "haarcascade_fullbody.xml"
-cascPathFrontalFace = "haarcascade_frontalface_default.xml"
-upperbodyCascade = cv2.CascadeClassifier(cascPathUpperBody)
-fullbodyCascade = cv2.CascadeClassifier(cascPathFullBody)
-frontalFaceCascade = cv2.CascadeClassifier(cascPathFrontalFace)
 
 ret, preFrame = video_capture.read()
 frame = gira(preFrame)
@@ -241,8 +108,7 @@ limpabg.start()
 numFrame = 0
 
 lista = []
-detecta = threading.Thread(target=detecta,args=())
-#detecta.start()
+
 
 new = gray.copy()
 frameShow = frame.copy()
@@ -308,6 +174,7 @@ while 1:
             
             if(item.verificaArea(x, y, w, h)):
                 
+                salva = False
                 #indices(0:x,1:y,2:w,3:h,4:numero do quadrado,5:posição do quadro no frame anterior,6:informa se é uma pessoa)
                 #novoitem = objeto.Objeto(item.num,x, y, w, h,[item.x,item.y,item.w,item.h],item.verificacoes,item.confirmado,item.ultimoMovimento, item.deteccoes)
                 #[x, y, w, h, item[4],[item[0],item[1],item[2],item[3]],item[6]]
@@ -324,6 +191,12 @@ while 1:
                         
                     if y + h < item.y + item.h:
                         h = (item.y + item.h) - y
+                        
+                    if(w > item.areaAnterior[2] + 30 | h > item.areaAnterior[3] + 30):
+                        salva = True
+                        continue
+                        
+                    
                 
                 
                 item.areaAnterior = [item.x,item.y,item.w,item.h]
@@ -337,7 +210,6 @@ while 1:
                 
                 #lista.insert(nitem,novoitem)
                 
-                salva = False
                 
                 continue
             
@@ -346,7 +218,8 @@ while 1:
         
         #se o quadrado não estiver na lista salva ele
         if(salva):
-            lista.append(objeto.Objeto(numFrame,x, y, w, h,[x, y, w, h],time.time(),gray))
+            lista.append(Objeto(x, y, w, h,[x, y, w, h],time.time(),numFrame,gray))
+            
             #lista.append([x, y, w, h,numFrame ,[x, y, w, h],False])
             
             
@@ -380,6 +253,7 @@ while 1:
             
             while num2 < len(lista):
                 if ((lista[num1].x == lista[num2].x) & (lista[num1].y == lista[num2].y) & (lista[num1].w == lista[num2].w) & (lista[num1].h == lista[num2].h)):
+                    lista[num2].stopObjeto()
                     lista.pop(num2)
                 else:
                     num2 = num2 + 1
@@ -430,9 +304,14 @@ while 1:
     #show.start()
     
     
-    if(len(contours) == 0):
-        while(len(lista) > 0):
-            lista.pop(0)
+    if(numFrame % 5 == 0):
+        nitem = 0
+        while(nitem < len(lista)):
+            if(lista[nitem].ultimoFrame < numFrame - 2):
+                lista[nitem].stopObjeto()
+                lista.pop(nitem)
+            else:
+                nitem = nitem + 1
     
     
     

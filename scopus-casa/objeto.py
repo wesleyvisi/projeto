@@ -1,4 +1,4 @@
-from _ast import Num
+
 import numpy as np
 import sys
 import time
@@ -8,10 +8,11 @@ import cv2
 
 class Objeto(object):
     
-
+    indice = 0
     
-    def __init__(self, num, x, y, w, h, areaAnterior, tempo,gray):
-        self.num = num
+    def __init__(self, x, y, w, h, areaAnterior, tempo,ultimoFrame,gray):
+        Objeto.indice = Objeto.indice + 1
+        self.num = Objeto.indice
         self.x = x
         self.y = y
         self.w = w
@@ -19,7 +20,8 @@ class Objeto(object):
         self.areaAnterior = areaAnterior
         self.ultimoMovimento = tempo
         self.deteccoes = []
-        self.ultimoFrame = num
+        self.ultimoFrame = ultimoFrame
+        self.stop = False
         
         cascPathUpperBody = "haarcascade_upperbody.xml"
         cascPathFullBody = "haarcascade_fullbody.xml"
@@ -32,6 +34,13 @@ class Objeto(object):
         self.thr = threading.Thread(target=(self.detecta),args=(gray,frontalFaceCascade,upperbodyCascade,fullbodyCascade))
         self.thr.start()
         
+        
+    
+    def stopObjeto(self):
+        self.stop = True
+    
+    
+    
         
     def tempoParado(self):
         return time.time() - self.ultimoMovimento
@@ -64,7 +73,7 @@ class Objeto(object):
     
         
     def detecta(self,gray,frontalFaceCascade,upperbodyCascade,fullbodyCascade):
-        while True:
+        while not self.stop:
             
             quadro = gray[self.y:self.y+self.h, self.x:self.x+self.w]
             
@@ -173,7 +182,7 @@ class Objeto(object):
         A2 = w2 * h2
         A = w * h
         
-        if((A > (A1 * 0.25)) | (A > (A2 * 0.25))):
+        if((A > (A1 * 0.3)) | (A > (A2 * 0.3))):
             return True
         
         else:
