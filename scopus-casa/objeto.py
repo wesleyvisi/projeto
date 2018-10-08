@@ -4,13 +4,14 @@ import sys
 import time
 import threading 
 import cv2
+from imagens import Imagens
 
 
 class Objeto(object):
     
     indice = 0
     
-    def __init__(self, x, y, w, h, areaAnterior, tempo,ultimoFrame,gray):
+    def __init__(self, x, y, w, h, areaAnterior, tempo,ultimoFrame,imagens):
         Objeto.indice = Objeto.indice + 1
         self.num = Objeto.indice
         self.x = x
@@ -31,7 +32,7 @@ class Objeto(object):
         frontalFaceCascade = cv2.CascadeClassifier(cascPathFrontalFace)
         
                 
-        self.thr = threading.Thread(target=(self.detecta),args=(gray,frontalFaceCascade,upperbodyCascade,fullbodyCascade))
+        self.thr = threading.Thread(target=(self.detecta),args=(imagens,frontalFaceCascade,upperbodyCascade,fullbodyCascade))
         self.thr.start()
         
         
@@ -60,7 +61,7 @@ class Objeto(object):
             if(item):
                 pessoa = pessoa + 1
         
-        if(pessoa > (len(self.deteccoes) / 50)):
+        if(pessoa > (len(self.deteccoes) / 20)):
             return True
         else: 
             return False
@@ -72,11 +73,11 @@ class Objeto(object):
     
     
         
-    def detecta(self,gray,frontalFaceCascade,upperbodyCascade,fullbodyCascade):
+    def detecta(self,imagens,frontalFaceCascade,upperbodyCascade,fullbodyCascade):
         while not self.stop:
             print(self.num)
             
-            quadro = gray[self.y:self.y+self.h, self.x:self.x+self.w]
+            quadro = imagens.gray[self.y:self.y+self.h, self.x:self.x+self.w]
             
             time.sleep(0.2)
             
@@ -89,7 +90,7 @@ class Objeto(object):
                 if(len(upperbodys) > 0):
                     self.deteccoesAdd(True)
                 else:
-                    fullbodys = fullbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=2)
+                    fullbodys = fullbodyCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=3)
                     if(len(fullbodys) > 0):
                         self.deteccoesAdd(True)
                     else:
