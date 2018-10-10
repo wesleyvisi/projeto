@@ -9,15 +9,17 @@ from time import sleep
 
 class Imagens(object):
     
-    def __init__(self,camera, rotacao):
+    def __init__(self,camera, rotacao,proporcao):
         
         self.stop = False
         
         self.rotacao = rotacao
+        self.proporcao = proporcao
         
         self.numFrame = 0
         
         self.video_capture = cv2.VideoCapture(camera)
+        
         
         ret, preFrame = self.video_capture.read()
         
@@ -71,15 +73,17 @@ class Imagens(object):
         while not self.stop:
             time.sleep(10)
             print("Limpando Bg")
+            
+            gray = self.gray.copy()
                 
-            dif = cv2.absdiff(self.primarybg, self.gray)
+            dif = cv2.absdiff(self.primarybg, gray)
             dif = cv2.threshold(dif, 10, 255, cv2.THRESH_BINARY)[1]
                     
                     
             for y in range(0,self.primarybg.shape[0]):
                 for x in range(0,self.primarybg.shape[1]):
                     if(dif[y,x] == 0):
-                        self.bg[y,x] = self.gray[y,x] 
+                        self.bg[y,x] = gray[y,x] 
         
 
 
@@ -200,28 +204,29 @@ class Imagens(object):
     
     def gira(self,frame):
         
+        altura, largura = frame.shape[:2]
+        
         if(self.rotacao == 90):
-            altura, largura = frame.shape[:2]
             frame = cv2.resize(frame,(largura,largura))
             ponto = (largura / 2, largura / 2) #ponto no centro da figura
             rotacao = cv2.getRotationMatrix2D(ponto, 90, 1.0)
             rotacionado = cv2.warpAffine(frame, rotacao, (largura, largura))
-            return cv2.resize(rotacionado,(int(altura/1),int(largura/1)))
+            return cv2.resize(rotacionado,(int(altura * self.proporcao),int(largura * self.proporcao)))
         
         if(self.rotacao == 180):
-            altura, largura = frame.shape[:2]
             ponto = (largura / 2, altura / 2) #ponto no centro da figura
             rotacao = cv2.getRotationMatrix2D(ponto, 180, 1.0)
-            return cv2.warpAffine(frame, rotacao, (largura, altura))
+            return cv2.warpAffine(frame, rotacao, (int(largura * self.proporcao), int(altura * self.proporcao)))
         
         if(self.rotacao == 270):
-            altura, largura = frame.shape[:2]
             frame = cv2.resize(frame,(largura,largura))
             ponto = (largura / 2, largura / 2) #ponto no centro da figura
             rotacao = cv2.getRotationMatrix2D(ponto, 270, 1.0)
             rotacionado = cv2.warpAffine(frame, rotacao, (largura, largura))
-            return cv2.resize(rotacionado,(int(altura/1),int(largura/1)))
+            return cv2.resize(rotacionado,(int(altura * self.proporcao),int(largura * self.proporcao)))
         
+        if(self.proporcao != 1):
+            frame = cv2.resize(frame,(int(altura * self.proporcao),int(largura * self.proporcao)))
         return frame
         
         

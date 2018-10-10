@@ -30,8 +30,8 @@ def show(imagens):
 
 
 print("carregando... ")
-imagens = Imagens("rtsp://10.42.0.95:554/user=admin&password=raspcam&channel=1&stream=0.sdp?",90)
-#imagens = Imagens(0,0)
+imagens = Imagens("rtsp://10.42.0.95:554/user=admin&password=raspcam&channel=1&stream=0.sdp?",90,0.7)
+#imagens = Imagens(0,0,1)
 #datetime.datetime.now()
 
 
@@ -59,7 +59,7 @@ while 1:
         
         
         
-        if (((y + h) < (imagens.alturaImagem / 3)) &   (cv2.contourArea(contour) < 35*35) & (w < (h * 4)) & (w > (h * 0.20)) ):
+        '''if (((y + h) < (imagens.alturaImagem / 3)) &   (cv2.contourArea(contour) < 35*35) & (w < (h * 4)) & (w > (h * 0.20)) ):
             
             imagens.atualizaBackground(x,y,w,h)
             
@@ -79,7 +79,7 @@ while 1:
         
         
         if cv2.contourArea(contour) < 60*60:
-            continue
+            continue'''
         
         
         
@@ -88,11 +88,36 @@ while 1:
         salva = True
         for nitem in range(0, len(lista)):
             
+            if(not salva):
+                continue
+                
+                
             item = lista[nitem]
+            
+            area = item.verificaArea(x, y, w, h)
+            
+            if (((((y + h) < (imagens.alturaImagem / 3)) &   (cv2.contourArea(contour) < 35*35) & (w < (h * 4)) & (w > (h * 0.20)) )  |
+                (((y + h) > (imagens.alturaImagem / 3)) & ((y + h) < ((imagens.alturaImagem / 3)) * 2) &   (cv2.contourArea(contour) < ((35*35)*2)) & (w < (h * 4)) & (w > (h * 0.20)) )  |
+                (((y + h) > ((imagens.alturaImagem / 3)) * 2) &   (cv2.contourArea(contour) < ((35*35)*3)) & (w < (h * 4)) & (w > (h * 0.20)) )
+                ) & (not area)):
+                salva = False
+                imagens.atualizaBackground(x,y,w,h)
+                
+                continue
+            
+            
+            
+            
+            if cv2.contourArea(contour) < 70*70:
+                salva = False
+                continue
+                
+            
+            
             
            
             
-            if(item.verificaArea(x, y, w, h)):
+            if(area):
                 
                 salva = False
 
@@ -165,14 +190,14 @@ while 1:
     for nitem in range(0, len(lista)):
         item = lista[nitem]
         #if((item.x >= (item.areaAnterior[0] - (item.w * 0.02))) & (item.x <= (item.areaAnterior[0] + (item.w * 0.02))) & (item.y >= (item.areaAnterior[1] -(item.h * 0.02))) & (item.y <= (item.areaAnterior[1] + (item.h * 0.02)))   &   (item.w >= (item.areaAnterior[2] - (item.w * 0.02))) & (item.w <= (item.areaAnterior[2] + (item.w * 0.02))) & (item.h >= (item.areaAnterior[3] - (item.h * 0.02))) & (item.h <= (item.areaAnterior[3] + (item.h * 0.02))) ):
-        if((item.x <= (item.areaAnterior[0] - 10)) |
-            (item.x >= (item.areaAnterior[0] + 10)) |
-             (item.y <= (item.areaAnterior[1] - 10)) |
-              (item.y >= (item.areaAnterior[1] + 10)) |
-               (item.w <= (item.areaAnterior[2] - 10)) |
-                (item.w >= (item.areaAnterior[2] + 10)) |
-                 (item.h <= (item.areaAnterior[3] - 10)) |
-                  (item.h >= (item.areaAnterior[3] + 10)) ):
+        if((item.x <= (item.areaAnterior[0] - 5)) |
+            (item.x >= (item.areaAnterior[0] + 5)) |
+             (item.y <= (item.areaAnterior[1] - 5)) |
+              (item.y >= (item.areaAnterior[1] + 5)) |
+               (item.w <= (item.areaAnterior[2] - 5)) |
+                (item.w >= (item.areaAnterior[2] + 5)) |
+                 (item.h <= (item.areaAnterior[3] - 5)) |
+                  (item.h >= (item.areaAnterior[3] + 5)) ):
             item.ultimoMovimento = time.time()        
          
             
