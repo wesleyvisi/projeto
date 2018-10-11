@@ -18,10 +18,9 @@ def show(imagens):
     time.sleep(1)
     while True:
         time.sleep(0.2)
-        cv2.imshow("bin",imagens.bin)
+        cv2.imshow("NEW",imagens.bin)
         cv2.imshow("bg",imagens.bg)
         cv2.imshow("Frame",imagens.frameShow)
-        cv2.imshow("primary",imagens.primarybg)
         cv2.waitKey(1)
     
 
@@ -30,8 +29,8 @@ def show(imagens):
 
 
 print("carregando... ")
-imagens = Imagens("rtsp://10.42.0.95:554/user=admin&password=raspcam&channel=1&stream=0.sdp?",90)
-#imagens = Imagens(0,0)
+#imagens = Imagens("rtsp://10.42.0.95:554/user=admin&password=raspcam&channel=1&stream=0.sdp?",90)
+imagens = Imagens(0,0)
 #datetime.datetime.now()
 
 
@@ -165,14 +164,14 @@ while 1:
     for nitem in range(0, len(lista)):
         item = lista[nitem]
         #if((item.x >= (item.areaAnterior[0] - (item.w * 0.02))) & (item.x <= (item.areaAnterior[0] + (item.w * 0.02))) & (item.y >= (item.areaAnterior[1] -(item.h * 0.02))) & (item.y <= (item.areaAnterior[1] + (item.h * 0.02)))   &   (item.w >= (item.areaAnterior[2] - (item.w * 0.02))) & (item.w <= (item.areaAnterior[2] + (item.w * 0.02))) & (item.h >= (item.areaAnterior[3] - (item.h * 0.02))) & (item.h <= (item.areaAnterior[3] + (item.h * 0.02))) ):
-        if((item.x <= (item.areaAnterior[0] - 10)) |
-            (item.x >= (item.areaAnterior[0] + 10)) |
-             (item.y <= (item.areaAnterior[1] - 10)) |
-              (item.y >= (item.areaAnterior[1] + 10)) |
-               (item.w <= (item.areaAnterior[2] - 10)) |
-                (item.w >= (item.areaAnterior[2] + 10)) |
-                 (item.h <= (item.areaAnterior[3] - 10)) |
-                  (item.h >= (item.areaAnterior[3] + 10)) ):
+        if((item.x <= (item.areaAnterior[0] - 20)) |
+            (item.x >= (item.areaAnterior[0] + 20)) |
+             (item.y <= (item.areaAnterior[1] - 20)) |
+              (item.y >= (item.areaAnterior[1] + 20)) |
+               (item.w <= (item.areaAnterior[2] - 20)) |
+                (item.w >= (item.areaAnterior[2] + 20)) |
+                 (item.h <= (item.areaAnterior[3] - 20)) |
+                  (item.h >= (item.areaAnterior[3] + 20)) ):
             item.ultimoMovimento = time.time()        
          
             

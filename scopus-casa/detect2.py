@@ -7,6 +7,8 @@ import sys
 from objeto import Objeto
 from imagens import Imagens
 import threading 
+import datetime 
+from datetime import date
 
 
 
@@ -16,9 +18,10 @@ def show(imagens):
     time.sleep(1)
     while True:
         time.sleep(0.2)
-        #cv2.imshow("NEW",new)
-        cv2.imshow("Frame",imagens.frameShow)
+        cv2.imshow("NEW",imagens.bin)
         cv2.imshow("bg",imagens.bg)
+        cv2.imshow("Frame",imagens.frameShow)
+        cv2.waitKey(1)
     
 
 
@@ -26,7 +29,10 @@ def show(imagens):
 
 
 print("carregando... ")
-imagens = Imagens("rtsp://10.42.0.95:554/user=admin&password=raspcam&channel=1&stream=0.sdp?",90)
+imagens = Imagens("rtsp://10.42.0.92:554/user=admin&password=raspcam&channel=1&stream=0.sdp?",90)
+#imagens = Imagens(0,0)
+#datetime.datetime.now()
+
 
 
 
@@ -124,7 +130,7 @@ while 1:
         
         #se o quadrado não estiver na lista salva ele
         if(salva):
-            lista.append(Objeto(x, y, w, h,[x, y, w, h],time.time(),imagens.numFrame,imagens.gray))
+            lista.append(Objeto(x, y, w, h,[x, y, w, h],time.time(),imagens.numFrame,imagens))
                     
             
     
@@ -157,16 +163,18 @@ while 1:
         
     for nitem in range(0, len(lista)):
         item = lista[nitem]
-        if((item.x >= (item.areaAnterior[0] - 2)) & (item.x <= (item.areaAnterior[0] + 2)) & (item.y >= (item.areaAnterior[1] - 2)) & (item.y <= (item.areaAnterior[1] + 2))   &   (item.w >= (item.areaAnterior[2] - 2)) & (item.w <= (item.areaAnterior[2] + 2)) & (item.h >= (item.areaAnterior[3] - 2)) & (item.h <= (item.areaAnterior[3] + 2)) ):
+        #if((item.x >= (item.areaAnterior[0] - (item.w * 0.02))) & (item.x <= (item.areaAnterior[0] + (item.w * 0.02))) & (item.y >= (item.areaAnterior[1] -(item.h * 0.02))) & (item.y <= (item.areaAnterior[1] + (item.h * 0.02)))   &   (item.w >= (item.areaAnterior[2] - (item.w * 0.02))) & (item.w <= (item.areaAnterior[2] + (item.w * 0.02))) & (item.h >= (item.areaAnterior[3] - (item.h * 0.02))) & (item.h <= (item.areaAnterior[3] + (item.h * 0.02))) ):
+        if((item.x <= (item.areaAnterior[0] - 20)) |
+            (item.x >= (item.areaAnterior[0] + 20)) |
+             (item.y <= (item.areaAnterior[1] - 20)) |
+              (item.y >= (item.areaAnterior[1] + 20)) |
+               (item.w <= (item.areaAnterior[2] - 20)) |
+                (item.w >= (item.areaAnterior[2] + 20)) |
+                 (item.h <= (item.areaAnterior[3] - 20)) |
+                  (item.h >= (item.areaAnterior[3] + 20)) ):
+            item.ultimoMovimento = time.time()        
+         
             
-            if((item.tempoParado() > 5) & (item.pessoa())):
-                cv2.putText(imagens.frame, "{}".format("SOS"), (x, y+250), cv2.FONT_HERSHEY_SIMPLEX, 3, color, 3)
-               
-            if((item.tempoParado() > 10) & (item.pessoa() == False)):
-                imagens.atualizaBackground(item.x,item.y,item.w,item.h)         
-                            
-        else:
-            item.ultimoMovimento = time.time()
         
     #Marca quadrados na imagem
     for nitem in range(0, len(lista)):
@@ -181,12 +189,22 @@ while 1:
         
             
         
-        cv2.putText(imagens.frame, "{}".format(str(item.num)), (x, y+50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 2)
-        cv2.putText(imagens.frame, "{}".format(str(item.ultimoMovimento)), (x, y+180), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
-        if(item.pessoa()):
-            cv2.rectangle(imagens.frame, (x, y), (x + w, y + h), (0,0,255), 2)
+        #cv2.putText(imagens.frame, "{}".format(str(item.num)), (x, y+50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 2)
+        #cv2.putText(imagens.frame, "{}".format(str(int(time.time() - item.ultimoMovimento))), (x, y+110), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        if((item.pessoa()) & (item.tempoParado() > 15)):
+            cv2.putText(imagens.frame, "{}".format(str(item.num)), (x, y+50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0,0,255), 2)
+            cv2.putText(imagens.frame, "{}".format("SOS"), (x, y+120), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,0,255), 10)
+            cv2.rectangle(imagens.frame, (x, y), (x + w, y + h), (0,0,255), 3)
+        elif(item.pessoa() ):
+            cv2.putText(imagens.frame, "{}".format(str(item.num)), (x, y+50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0,255,0), 2)
+            cv2.putText(imagens.frame, "{}".format(str(int(item.tempoParado()))), (x, y+120), cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0,255,0), 2)
+            cv2.rectangle(imagens.frame, (x, y), (x + w, y + h), (0,255,0), 3)
+            
+        elif(item.tempoParado() > 15):
+            imagens.atualizaBackground(item.x,item.y,item.w,item.h)  
         else:
-            cv2.rectangle(imagens.frame, (x, y), (x + w, y + h), (50,200,50), 2)
+            cv2.putText(imagens.frame, "{}".format(str(item.num)), (x, y+50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (50,255,255), 2)
+            cv2.rectangle(imagens.frame, (x, y), (x + w, y + h), (50,255,255), 3)
         
     
     

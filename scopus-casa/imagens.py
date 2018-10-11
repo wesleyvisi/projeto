@@ -18,6 +18,7 @@ class Imagens(object):
         self.numFrame = 0
         
         self.video_capture = cv2.VideoCapture(camera)
+        
         ret, preFrame = self.video_capture.read()
         
         self.frame = self.gira(preFrame)
@@ -88,7 +89,7 @@ class Imagens(object):
     def pegarBackground(self):
         
         
-        
+        '''
         contours = [1,2]
         
         ret, preFrame = self.video_capture.read()
@@ -105,7 +106,7 @@ class Imagens(object):
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             diff = cv2.absdiff(self.primarybg, gray)
             dilate = cv2.dilate(diff, None, iterations=5)
-            bin = cv2.threshold(dilate, 18, 255, cv2.THRESH_BINARY)[1]
+            bin = cv2.threshold(dilate, 58, 255, cv2.THRESH_BINARY)[1]
             _, contours, _ = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 
@@ -119,67 +120,66 @@ class Imagens(object):
         
         frame = self.gira(preFrame)
         
-        #self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        #time.sleep(0.4)
-        
-        
-        
-        
-        
-        ret, preFrame = self.video_capture.read()
-        frame = self.gira(preFrame)
-        temp5 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        
-        
-        
-        while(len(contours) > 0):
-
-            #cv2.imshow("Primary",self.primarybg)
-            for i in range(0, 3):
-                ret, temp1 = self.video_capture.read()
-                
-            cv2.imshow("temp1",temp1)
-            
-
-
-            for i in range(0, 3):
-                ret, temp2 = self.video_capture.read()
-
-            cv2.imshow("temp2",temp2)
-            
-            
-            
-            for i in range(0, 3):
-                ret, temp3 = self.video_capture.read()
-            
-            cv2.imshow("temp3",temp3)
-            
-            
-            for i in range(0, 3):
-                ret, temp4 = self.video_capture.read()
-            
-            cv2.imshow("temp4",temp4)
-            
-            cv2.imshow("temp5",temp5)
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+        self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        cont = 0
+        while((len(contours) > 0) & (cont < 80)):
+            cont = cont+1
+            time.sleep(0.1)
+            print(cont)
             ret, preFrame = self.video_capture.read()
-            frame = self.gira(preFrame)
-            temp5 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break'''
+            frame = self.gira(preFrame)
+            
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            diff = cv2.absdiff(self.primarybg, gray)
+            dilate = cv2.dilate(diff, None, iterations=5)
+            bin = cv2.threshold(dilate, 10, 255, cv2.THRESH_BINARY)[1]
+            _, contours, _ = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            for contour in contours:
+                (xx, xy, xw, xh) = cv2.boundingRect(contour)
+                cv2.rectangle(self.primarybg, (xx, xy), (xx + xw, xy + xh), (0,0,255), 3)
+            
+            
+            self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                
+                
+        if(cont == 80):
+            
+            img1 = cv2.imread("bg/1.jpg",cv2.IMREAD_GRAYSCALE)
+            img2 = cv2.imread("bg/2.jpg",cv2.IMREAD_GRAYSCALE)
+            
+            for contour in contours:
+                (x, y, w, h) = cv2.boundingRect(contour)
+                
+                quadro1 = img1[y:y+h, x:x+w]
+                quadro2 = img2[y:y+h, x:x+w]
+                
+                new = cv2.absdiff(quadro1, quadro2)
+    
+                new = cv2.threshold(new, 10, 255, cv2.THRESH_BINARY)[1]
+                igual = 0
+                diferente = 0
+                for ty in range(0, new.shape[0]):
+                    for tx in range(0, new.shape[1]):
+                        if(new[ty,tx] == 0):
+                            igual = igual + 1
+                        else:
+                            diferente = diferente + 1
+                            
+                if(igual > diferente * 2):
+                    print(x , w, y , h)
+                    for cy in range(y,y+h):
+                        for cx in range(x,x+w):
+                            self.primarybg[cy,cx] = img2[cy,cx]
+                
+                cv2.rectangle(img1, (x, y), (x + w, y + h), (50,200,50), 2)
+            
+            
+            
+            
+        self.bg = self.primarybg.copy()
+            
         
         
         
@@ -232,7 +232,7 @@ class Imagens(object):
         
         new = cv2.threshold(new, 50, 255, cv2.THRESH_BINARY)[1]
         
-        self.bin = cv2.dilate(new, np.ones((9,3), np.uint8), iterations=7)
+        self.bin = cv2.dilate(new, np.ones((10,3), np.uint8), iterations=7)
         
         _, contours, _ = cv2.findContours(new, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         return contours
