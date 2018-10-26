@@ -37,6 +37,8 @@ class Imagens(object):
         
         self.bg =  self.gray.copy()
         
+        self.pegandoBackground = False
+        
         self.pegarBackground()
         
         
@@ -72,19 +74,22 @@ class Imagens(object):
     def limpaBg(self):
         while not self.stop:
             time.sleep(10)
-            print("Limpando Bg")
             
-            gray = self.gray.copy()
+            if(self.pegandoBackground == False):
+                    
+                print("Limpando Bg")
                 
-            dif = cv2.absdiff(self.primarybg, gray)
-            dif = cv2.threshold(dif, 10, 255, cv2.THRESH_BINARY)[1]
+                gray = self.gray.copy()
                     
-                    
-            for y in range(0,self.primarybg.shape[0]):
-                for x in range(0,self.primarybg.shape[1]):
-                    if(dif[y,x] == 0):
-                        self.bg[y,x] = gray[y,x] 
-        
+                dif = cv2.absdiff(self.primarybg, gray)
+                dif = cv2.threshold(dif, 10, 255, cv2.THRESH_BINARY)[1]
+                        
+                        
+                for y in range(0,self.primarybg.shape[0]):
+                    for x in range(0,self.primarybg.shape[1]):
+                        if(dif[y,x] == 0):
+                            self.bg[y,x] = gray[y,x] 
+            
 
 
 
@@ -92,31 +97,7 @@ class Imagens(object):
         
     def pegarBackground(self):
         
-        
-        '''
-        contours = [1,2]
-        
-        ret, preFrame = self.video_capture.read()
-        
-        frame = self.gira(preFrame)
-        
-        self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        while(len(contours) > 0):
-            ret, preFrame = self.video_capture.read()
-            
-            frame = self.gira(preFrame)
-            
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            diff = cv2.absdiff(self.primarybg, gray)
-            dilate = cv2.dilate(diff, None, iterations=5)
-            bin = cv2.threshold(dilate, 58, 255, cv2.THRESH_BINARY)[1]
-            _, contours, _ = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                
-        self.bg = self.primarybg.copy()
-        
-        '''
+        self.pegandoBackground = True
         
         contours = [1,2]
         
@@ -126,8 +107,11 @@ class Imagens(object):
         
         self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         cont = 0
-        while((len(contours) > 0) & (cont < 80)):
+        sensibilidade = 5
+        while((len(contours) > 0) & (cont < 130)):
             cont = cont+1
+            if(cont > 50):
+                sensibilidade = 10
             time.sleep(0.1)
             print(cont)
             ret, preFrame = self.video_capture.read()
@@ -137,7 +121,7 @@ class Imagens(object):
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             diff = cv2.absdiff(self.primarybg, gray)
             dilate = cv2.dilate(diff, None, iterations=5)
-            bin = cv2.threshold(dilate, 10, 255, cv2.THRESH_BINARY)[1]
+            bin = cv2.threshold(dilate, sensibilidade, 255, cv2.THRESH_BINARY)[1]
             _, contours, _ = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
             for contour in contours:
@@ -148,7 +132,7 @@ class Imagens(object):
             self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 
                 
-        if(cont == 80):
+        if(cont == 130):
             
             img1 = cv2.imread("bg/1.jpg",cv2.IMREAD_GRAYSCALE)
             img2 = cv2.imread("bg/2.jpg",cv2.IMREAD_GRAYSCALE)
@@ -183,6 +167,8 @@ class Imagens(object):
             
             
         self.bg = self.primarybg.copy()
+        
+        self.pegandoBackground = False
             
         
         
@@ -226,7 +212,7 @@ class Imagens(object):
             return cv2.resize(rotacionado,(int(altura * self.proporcao),int(largura * self.proporcao)))
         
         if(self.proporcao != 1):
-            frame = cv2.resize(frame,(int(altura * self.proporcao),int(largura * self.proporcao)))
+            frame = cv2.resize(frame,(int(largura * self.proporcao),int(altura * self.proporcao)))
         return frame
         
         
@@ -235,9 +221,9 @@ class Imagens(object):
     
         new = cv2.dilate(new, None, iterations=3)
         
-        new = cv2.threshold(new, 50, 255, cv2.THRESH_BINARY)[1]
+        new = cv2.threshold(new, 60, 255, cv2.THRESH_BINARY)[1]
         
-        self.bin = cv2.dilate(new, np.ones((10,3), np.uint8), iterations=7)
+        self.bin = cv2.dilate(new, np.ones((9,3), np.uint8), iterations=5)
         
         _, contours, _ = cv2.findContours(new, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         return contours
@@ -246,3 +232,13 @@ class Imagens(object):
     
     def atualizaFrameShow(self):
         self.frameShow = self.frame
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

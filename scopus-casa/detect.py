@@ -30,7 +30,7 @@ def show(imagens):
 
 
 print("carregando... ")
-imagens = Imagens("rtsp://10.42.0.95:554/user=admin&password=raspcam&channel=1&stream=0.sdp?",90,0.7)
+imagens = Imagens("rtsp://192.168.1.109:554/user=admin&password=raspcam&channel=1&stream=0.sdp?",0,0.7)
 #imagens = Imagens(0,0,1)
 #datetime.datetime.now()
 

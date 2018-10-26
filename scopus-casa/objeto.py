@@ -185,7 +185,7 @@ class Objeto(object):
         A2 = w2 * h2
         A = w * h
         
-        if((A > (A1 * 0.25)) | (A > (A2 * 0.25))):
+        if((A > (A1 * 0.05)) | (A > (A2 * 0.05))):
             return True
         
         else:
