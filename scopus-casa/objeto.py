@@ -5,6 +5,7 @@ import time
 import threading 
 import cv2
 from imagens import Imagens
+from settings import Settings
 
 
 class Objeto(object):
@@ -24,9 +25,11 @@ class Objeto(object):
         self.ultimoFrame = ultimoFrame
         self.stop = False
         
-        cascPathUpperBody = "haarcascade_upperbody.xml"
-        cascPathFullBody = "haarcascade_fullbody.xml"
-        cascPathFrontalFace = "haarcascade_frontalface_default.xml"
+        self.settings = Settings()
+        
+        cascPathUpperBody = "haarcascade/haarcascade_upperbody.xml"
+        cascPathFullBody = "haarcascade/haarcascade_fullbody.xml"
+        cascPathFrontalFace = "haarcascade/haarcascade_frontalface_default.xml"
         upperbodyCascade = cv2.CascadeClassifier(cascPathUpperBody)
         fullbodyCascade = cv2.CascadeClassifier(cascPathFullBody)
         frontalFaceCascade = cv2.CascadeClassifier(cascPathFrontalFace)
@@ -49,19 +52,14 @@ class Objeto(object):
     
     def deteccoesAdd(self, r):
         self.deteccoes.append(r)
-        if(len(self.deteccoes) > 200):
+        if(len(self.deteccoes) > self.settings.objetoDeteccoes):
             self.deteccoes.pop(0)
     
     
     def pessoa(self):
+       
         
-        pessoa = 0 
-        
-        for item in self.deteccoes:
-            if(item):
-                pessoa = pessoa + 1
-        
-        if(pessoa > (len(self.deteccoes) / 20)):
+        if(self.deteccoes.count(True) > (len(self.deteccoes) / self.settings.objetoMinDeteccoes)):
             return True
         else: 
             return False
@@ -80,7 +78,7 @@ class Objeto(object):
             quadro = imagens.gray[self.y:self.y+self.h, self.x:self.x+self.w]
             
             
-            time.sleep(0.2)
+            time.sleep(0.3)
             
             frontalFaces = frontalFaceCascade.detectMultiScale(quadro, scaleFactor=1.2, minNeighbors=1)
                 
@@ -185,7 +183,7 @@ class Objeto(object):
         A2 = w2 * h2
         A = w * h
         
-        if((A > (A1 * 0.05)) | (A > (A2 * 0.05))):
+        if((A > (A1 * self.settings.objetoProporcaoArea)) | (A > (A2 * self.settings.objetoProporcaoArea))):
             return True
         
         else:

@@ -1,2 +1,6 @@
 eclipse.preferences.version=1
+encoding//socket/status.py=utf-8
+encoding/camera.py=utf-8
 encoding/detect.py=utf-8
+encoding/settings.py=utf-8
+encoding/status.py=utf-8

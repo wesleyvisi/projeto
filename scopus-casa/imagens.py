@@ -5,16 +5,22 @@ import threading
 import time
 import cv2
 from time import sleep
+import os
+from settings import Settings
 
 
 class Imagens(object):
     
-    def __init__(self,camera, rotacao,proporcao):
+    def __init__(self,cameraId,camera, rotacao,proporcao):
+        
+        self.cameraId = cameraId
         
         self.stop = False
         
         self.rotacao = rotacao
         self.proporcao = proporcao
+        
+        self.settings = Settings()
         
         self.numFrame = 0
         
@@ -39,7 +45,8 @@ class Imagens(object):
         
         self.pegandoBackground = False
         
-        self.pegarBackground()
+        self.ultimoMovimento = time.time()
+        
         
         
         
@@ -48,6 +55,13 @@ class Imagens(object):
         new = cv2.dilate(new, None, iterations=2)
         self.bin = cv2.threshold(new, 50, 255, cv2.THRESH_BINARY)[1]
                 
+        
+        
+        
+        
+    
+    def start(self):
+        self.pegarBg()
         
         self.limpabg = threading.Thread(target=self.limpaBg,args=())
         self.limpabg.start()
@@ -73,7 +87,7 @@ class Imagens(object):
         
     def limpaBg(self):
         while not self.stop:
-            time.sleep(10)
+            time.sleep(self.settings.limpaBgTime)
             
             if(self.pegandoBackground == False):
                     
@@ -82,7 +96,7 @@ class Imagens(object):
                 gray = self.gray.copy()
                     
                 dif = cv2.absdiff(self.primarybg, gray)
-                dif = cv2.threshold(dif, 10, 255, cv2.THRESH_BINARY)[1]
+                dif = cv2.threshold(dif, self.settings.limpaBgSensibilidade, 255, cv2.THRESH_BINARY)[1]
                         
                         
                 for y in range(0,self.primarybg.shape[0]):
@@ -95,7 +109,7 @@ class Imagens(object):
 
 
         
-    def pegarBackground(self):
+    def pegarBg(self):
         
         self.pegandoBackground = True
         
@@ -107,11 +121,11 @@ class Imagens(object):
         
         self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         cont = 0
-        sensibilidade = 5
-        while((len(contours) > 0) & (cont < 130)):
+        sensibilidade = 6
+        while((len(contours) > 0) & (cont < self.settings.pegarBgTentativas)):
             cont = cont+1
             if(cont > 50):
-                sensibilidade = 10
+                sensibilidade = self.settings.pegarBgSensibilidade
             time.sleep(0.1)
             print(cont)
             ret, preFrame = self.video_capture.read()
@@ -124,45 +138,77 @@ class Imagens(object):
             bin = cv2.threshold(dilate, sensibilidade, 255, cv2.THRESH_BINARY)[1]
             _, contours, _ = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
-            for contour in contours:
-                (xx, xy, xw, xh) = cv2.boundingRect(contour)
-                cv2.rectangle(self.primarybg, (xx, xy), (xx + xw, xy + xh), (0,0,255), 3)
             
             
             self.primarybg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 
                 
-        if(cont == 130):
+                
+        
+        
+        
+        if(cont == self.settings.pegarBgTentativas):
             
-            img1 = cv2.imread("bg/1.jpg",cv2.IMREAD_GRAYSCALE)
-            img2 = cv2.imread("bg/2.jpg",cv2.IMREAD_GRAYSCALE)
+            bgs = []
+            
+            for contArq in range(0,10):
+                
+                 if(os.path.exists('bg/'+str(self.cameraId)+' - '+str(contArq)+'.jpg')):
+                    bgs.append(cv2.imread('bg/'+str(self.cameraId)+' - '+str(contArq)+'.jpg',cv2.IMREAD_GRAYSCALE))
+                    altura, largura = bgs[len(bgs)-1].shape[:2]
+                    print(str(altura)+"-"+str( largura)+" , "+str(self.alturaImagem)+"-"+str( self.larguraImagem))
+                    if(altura != self.alturaImagem | largura != self.larguraImagem):
+                        bgs[len(bgs)-1] = cv2.resize(bgs[len(bgs)-1],(self.larguraImagem,self.alturaImagem))
+                    altura, largura = bgs[len(bgs)-1].shape[:2]
+                    print(str(altura)+"-"+str( largura)+" , "+str(self.alturaImagem)+"-"+str( self.larguraImagem))
+            
+           
+            
+            
+            
+            
+            semelhante = self.primarybg.copy()
+            numSemelhante = 0;
+            for img in bgs:
+                quadro2 = img
+                new = cv2.absdiff(self.primarybg, quadro2)
+                    
+                igual = np.count_nonzero(new == 0);
+                    
+                
+                                
+                if(igual > numSemelhante):
+                    numSemelhante = igual
+                    semelhante = img
+                        
+                        
+            
             
             for contour in contours:
                 (x, y, w, h) = cv2.boundingRect(contour)
                 
-                quadro1 = img1[y:y+h, x:x+w]
-                quadro2 = img2[y:y+h, x:x+w]
                 
-                new = cv2.absdiff(quadro1, quadro2)
-    
-                new = cv2.threshold(new, 10, 255, cv2.THRESH_BINARY)[1]
-                igual = 0
-                diferente = 0
-                for ty in range(0, new.shape[0]):
-                    for tx in range(0, new.shape[1]):
-                        if(new[ty,tx] == 0):
-                            igual = igual + 1
-                        else:
-                            diferente = diferente + 1
-                            
-                if(igual > diferente * 2):
-                    print(x , w, y , h)
-                    for cy in range(y,y+h):
-                        for cx in range(x,x+w):
-                            self.primarybg[cy,cx] = img2[cy,cx]
+                             
+                    
+                    
+                for cy in range(y,y+h):
+                    for cx in range(x,x+w):
+                        self.primarybg[cy,cx] = semelhante[cy,cx]
+                        
+                        
+            self.aguardeBgThr = threading.Thread(target=self.aguardeBg,args=())
+            self.aguardeBgThr.start()
                 
-                cv2.rectangle(img1, (x, y), (x + w, y + h), (50,200,50), 2)
+#                 
+                
+        else:
             
+            for contArq in range(0,9):
+                if(os.path.exists('bg/'+str(self.cameraId)+' - '+str(8 - contArq)+'.jpg')):
+                    
+                    os.rename('bg/'+str(self.cameraId)+' - '+str(8 - contArq)+'.jpg', 'bg/'+str(self.cameraId)+' - '+str(9 - contArq)+'.jpg')
+            
+            cv2.imwrite('bg/'+str(self.cameraId)+' - 0.jpg',self.primarybg)
             
             
             
@@ -221,18 +267,39 @@ class Imagens(object):
     
         new = cv2.dilate(new, None, iterations=3)
         
-        new = cv2.threshold(new, 60, 255, cv2.THRESH_BINARY)[1]
+        new = cv2.threshold(new, self.settings.pegarContornosSensibilidade, 255, cv2.THRESH_BINARY)[1]
         
         self.bin = cv2.dilate(new, np.ones((9,3), np.uint8), iterations=5)
         
         _, contours, _ = cv2.findContours(new, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        
+        
         return contours
+    
+    
+    
+    
+    def atualizaUltimoMovimento(self):
+        self.ultimoMovimento = time.time()
     
     
     
     def atualizaFrameShow(self):
         self.frameShow = self.frame
     
+    
+    
+    
+    
+    def aguardeBg(self):
+        time.sleep(10) 
+        while(self.ultimoMovimento > (time.time() - self.settings.aguardeBgTime)):
+            
+            time.sleep(1)
+            
+            
+        self.pegarBg()
     
     
     
